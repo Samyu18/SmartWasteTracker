@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - Smart Waste Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">♻️ Smart Waste Tracker</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Dashboard</a>
+                <a class="nav-link active" href="/inventory">Inventory</a>
+                <a class="nav-link" href="/recommendations">Recommendations</a>
+                <a class="nav-link" href="/analytics">Analytics</a>
+                <a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <button id="theme-toggle" class="btn btn-outline-secondary ms-2" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>Inventory Management</h1>
+                    <p class="lead">Add, track, and manage your inventory items</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i class="fas fa-plus"></i> Add New Item
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Add Form -->
+        <div class="card">
+            <h3>Quick Add Item</h3>
+            <form method="POST" action="/add_item" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="name" class="form-control" placeholder="Item Name" required>
+                </div>
+                <div class="col-md-2">
+                    <select name="category" class="form-control" required>
+                        <option value="">Category</option>
+                        <option value="Dairy">Dairy</option>
+                        <option value="Bakery">Bakery</option>
+                        <option value="Produce">Produce</option>
+                        <option value="Meat">Meat</option>
+                        <option value="Frozen">Frozen</option>
+                        <option value="Canned">Canned</option>
+                        <option value="Beverages">Beverages</option>
+                        <option value="Snacks">Snacks</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="quantity" class="form-control" placeholder="Quantity" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="shelf_life" class="form-control" placeholder="Shelf Life (days)" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="location" class="form-control" placeholder="Location" required>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search items...">
+                </div>
+                <div class="col-md-3">
+                    <select id="categoryFilter" class="form-control">
+                        <option value="">All Categories</option>
+                        <option value="Dairy">Dairy</option>
+                        <option value="Bakery">Bakery</option>
+                        <option value="Produce">Produce</option>
+                        <option value="Meat">Meat</option>
+                        <option value="Frozen">Frozen</option>
+                        <option value="Canned">Canned</option>
+                        <option value="Beverages">Beverages</option>
+                        <option value="Snacks">Snacks</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-control">
+                        <option value="">All Status</option>
+                        <option value="normal">Normal</option>
+                        <option value="expiring">Expiring Soon</option>
+                        <option value="surplus">Surplus</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="card">
+            <form id="deleteSelectedForm" method="POST" action="/delete_selected">
+                <button type="submit" class="btn btn-danger mb-3" onclick="return confirm('Are you sure you want to delete the selected items?')">Delete Selected</button>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll"></th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Shelf Life</th>
+                                <th>Location</th>
+                                <th>Added Date</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr data-category="{{ item.category }}" data-status="{% if item.name in surplus %}surplus{% elif item.expiry_date < (now + timedelta(days=7)) %}expiring{% else %}normal{% endif %}">
+                                <td><input type="checkbox" name="item_ids" value="{{ item.id }}" class="row-checkbox"></td>
+                                <td class="name-cell"><strong>{{ item.name }}</strong></td>
+                                <td><span class="badge bg-primary">{{ item.category }}</span></td>
+                                <td>
+                                    <span class="quantity-display">{{ item.quantity }}</span>
+                                    {% if item.quantity > 20 %}
+                                        <span class="badge bg-warning ms-1">High</span>
+                                    {% endif %}
+                                </td>
+                                <td class="shelf-life-cell">{{ item.shelf_life }} days</td>
+                                <td class="location-cell">{{ item.location }}</td>
+                                <td>{{ item.added_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="expiry-date">{{ item.expiry_date.strftime('%Y-%m-%d') }}</span>
+                                    {% if item.expiry_date < (now + timedelta(days=7)) %}
+                                        <span class="badge badge-expiring ms-1">Soon</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.name in surplus %}
+                                        <span class="badge badge-surplus">Surplus</span>
+                                    {% elif item.expiry_date < (now + timedelta(days=7)) %}
+                                        <span class="badge badge-expiring">Expiring Soon</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editItem({{ item.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="adjustQuantity({{ item.id }})">
+                                            <i class="fas fa-adjust"></i>
+                                        </button>
+                                        <a href="/delete_item/{{ item.id }}" class="btn btn-sm btn-outline-danger" 
+                                           onclick="return confirm('Are you sure you want to delete this item?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ items|length }}</div>
+                    <div class="stats-label">Total Items</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ items|selectattr('category', 'equalto', 'Dairy')|list|length }}</div>
+                    <div class="stats-label">Dairy Items</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ items|selectattr('category', 'equalto', 'Produce')|list|length }}</div>
+                    <div class="stats-label">Produce Items</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ items|selectattr('category', 'equalto', 'Bakery')|list|length }}</div>
+                    <div class="stats-label">Bakery Items</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="/add_item">
+                        <div class="mb-3">
+                            <label class="form-label">Item Name</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <option value="Dairy">Dairy</option>
+                                <option value="Bakery">Bakery</option>
+                                <option value="Produce">Produce</option>
+                                <option value="Meat">Meat</option>
+                                <option value="Frozen">Frozen</option>
+                                <option value="Canned">Canned</option>
+                                <option value="Beverages">Beverages</option>
+                                <option value="Snacks">Snacks</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" name="quantity" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Shelf Life (days)</label>
+                                    <input type="number" name="shelf_life" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" required>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Item</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adjust Quantity Modal -->
+    <div class="modal fade" id="adjustQuantityModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Adjust Quantity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" id="adjustQuantityForm">
+                        <div class="mb-3">
+                            <label class="form-label">New Quantity</label>
+                            <input type="number" name="quantity" class="form-control" required min="0">
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning">Update Quantity</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Additional inventory-specific JavaScript
+        function editItem(itemId) {
+            // Implement edit functionality
+            showNotification('Edit functionality coming soon!', 'info');
+        }
+        
+        function adjustQuantity(itemId) {
+            // Set the form action and show modal
+            const form = document.getElementById('adjustQuantityForm');
+            form.action = `/update_quantity/${itemId}`;
+            const modal = new bootstrap.Modal(document.getElementById('adjustQuantityModal'));
+            modal.show();
+        }
+        
+        // Filter functionality
+        document.getElementById('categoryFilter').addEventListener('change', filterItems);
+        document.getElementById('statusFilter').addEventListener('change', filterItems);
+        
+        function filterItems() {
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const category = row.dataset.category;
+                const status = row.dataset.status;
+                
+                const categoryMatch = !categoryFilter || category === categoryFilter;
+                const statusMatch = !statusFilter || status === statusFilter;
+                
+                if (categoryMatch && statusMatch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Select All functionality
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                const checked = this.checked;
+                document.querySelectorAll('.row-checkbox').forEach(function(cb) { cb.checked = checked; });
+            });
+        }
+    </script>
+    <script>
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('light-theme');
+    if (body.classList.contains('light-theme')) {
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-moon"></i>';
+    }
+}
+window.onload = function() {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+</script>
+</body>
+</html> 

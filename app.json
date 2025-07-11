@@ -1,0 +1,34 @@
+{
+  "name": "Smart Waste Tracker",
+  "description": "A web application for retail stores to track, predict, and minimize inventory waste using Python, Flask, and advanced data structures.",
+  "repository": "https://github.com/yourusername/smart-waste-tracker",
+  "logo": "https://raw.githubusercontent.com/yourusername/smart-waste-tracker/main/static/img/logo.png",
+  "keywords": ["python", "flask", "waste-management", "inventory", "analytics"],
+  "website": "https://smart-waste-tracker.herokuapp.com",
+  "env": {
+    "SECRET_KEY": {
+      "description": "A secret key for session encryption",
+      "generator": "secret"
+    },
+    "DATABASE_URL": {
+      "description": "Database connection string",
+      "value": "sqlite:///waste_tracker.db"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:hobby-dev"
+    }
+  ]
+} 

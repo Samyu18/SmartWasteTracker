@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations - Smart Waste Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">Smart Waste Tracker</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Dashboard</a>
+                <a class="nav-link" href="/inventory">Inventory</a>
+                <a class="nav-link active" href="/recommendations">Recommendations</a>
+                <a class="nav-link" href="/analytics">Analytics</a>
+                <a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <button id="theme-toggle" class="btn btn-outline-secondary ms-2" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>Smart Recommendations</h1>
+                    <p class="lead">AI-powered suggestions to minimize waste and maximize efficiency</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary" onclick="refreshRecommendations()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Priority Actions -->
+        <div class="card">
+            <h3>🚨 Priority Actions</h3>
+            <div class="row">
+                {% for rec in recs[:3] %}
+                <div class="col-md-4 mb-3">
+                    <div class="alert alert-danger">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="alert-heading">{{ rec.item.name }}</h6>
+                                <p class="mb-1">Expires: {{ rec.item.expiry_date.strftime('%Y-%m-%d') }}</p>
+                                <p class="mb-2">Quantity: {{ rec.item.quantity }}</p>
+                                <strong>Action: {{ rec.action }}</strong>
+                            </div>
+                            <button class="btn btn-sm btn-outline-light" onclick="markAsComplete({{ rec.item.id }})">
+                                ✓ Complete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- All Recommendations -->
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>All Recommendations</h3>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary active" onclick="filterRecommendations('all')">All</button>
+                    <button class="btn btn-outline-warning" onclick="filterRecommendations('donate')">Donate</button>
+                    <button class="btn btn-outline-success" onclick="filterRecommendations('repurpose')">Repurpose</button>
+                    <button class="btn btn-outline-info" onclick="filterRecommendations('recycle')">Recycle</button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Expiry Date</th>
+                            <th>Recommended Action</th>
+                            <th>Impact Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in recs %}
+                        <tr data-action="{{ rec.action.lower() }}">
+                            <td class="rec-name"><strong>{{ rec.item.name }}</strong></td>
+                            <td class="rec-category">{{ rec.item.category }}</td>
+                            <td class="rec-quantity">
+                                <span class="quantity-display">{{ rec.item.quantity }}</span>
+                                {% if rec.item.quantity > 20 %}
+                                    <span class="badge bg-warning ms-1">High</span>
+                                {% endif %}
+                            </td>
+                            <td class="rec-expiry">
+                                <span class="expiry-date">{{ rec.item.expiry_date.strftime('%Y-%m-%d') }}</span>
+                                {% if rec.item.expiry_date < (now + timedelta(days=7)) %}
+                                    <span class="badge bg-danger ms-1">Urgent</span>
+                                {% endif %}
+                            </td>
+                            <td class="rec-action">
+                                {% if rec.action == 'Donate' %}
+                                    <span class="badge bg-success">Donate</span>
+                                {% elif rec.action == 'Repurpose' %}
+                                    <span class="badge bg-warning">Repurpose</span>
+                                {% elif rec.action == 'Recycle' %}
+                                    <span class="badge bg-info">Recycle</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ rec.action }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: {% if rec.action == 'Donate' %}85{% elif rec.action == 'Repurpose' %}70{% else %}60{% endif %}%"></div>
+                                </div>
+                                <small>{% if rec.action == 'Donate' %}85%{% elif rec.action == 'Repurpose' %}70%{% else %}60%{% endif %} impact</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-success" onclick="executeAction({{ rec.item.id }}, '{{ rec.action }}')">
+                                        <i class="fas fa-check"></i> Execute
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewDetails({{ rec.item.id }})">
+                                        <i class="fas fa-info"></i> Details
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="dismissRecommendation({{ rec.item.id }})">
+                                        <i class="fas fa-times"></i> Dismiss
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i> No recommendations at this time! Great job managing your inventory.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Impact Summary -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ recs|length }}</div>
+                    <div class="stats-label">Total Recommendations</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ recs|selectattr('action', 'equalto', 'Donate')|list|length }}</div>
+                    <div class="stats-label">Donation Opportunities</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ recs|selectattr('action', 'equalto', 'Repurpose')|list|length }}</div>
+                    <div class="stats-label">Repurposing Options</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">$2,450</div>
+                    <div class="stats-label">Potential Savings</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Templates -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>📋 Donation Template</h3>
+                    <div class="alert alert-success">
+                        <h6>Local Food Banks</h6>
+                        <ul class="mb-2">
+                            <li>City Food Bank - 555-0123</li>
+                            <li>Community Kitchen - 555-0124</li>
+                            <li>Homeless Shelter - 555-0125</li>
+                        </ul>
+                        <button class="btn btn-sm btn-success">Contact Now</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>♻️ Recycling Partners</h3>
+                    <div class="alert alert-info">
+                        <h6>Recycling Services</h6>
+                        <ul class="mb-2">
+                            <li>Green Waste Co. - 555-0200</li>
+                            <li>Eco Recycling - 555-0201</li>
+                            <li>Compost Solutions - 555-0202</li>
+                        </ul>
+                        <button class="btn btn-sm btn-info">Schedule Pickup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Stories -->
+        <div class="card">
+            <h3>🎉 Recent Success Stories</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="alert alert-success">
+                        <h6>Milk Donation</h6>
+                        <p>50 gallons donated to local shelter</p>
+                        <small>Saved $200, helped 100 people</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="alert alert-warning">
+                        <h6>Bread Repurposing</h6>
+                        <p>Converted to breadcrumbs and croutons</p>
+                        <small>Generated $150 in additional sales</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="alert alert-info">
+                        <h6>Produce Composting</h6>
+                        <p>200 lbs of produce composted</p>
+                        <small>Reduced waste by 80%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Modal -->
+    <div class="modal fade" id="actionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Execute Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="actionDetails">
+                        <!-- Action details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmAction()">Confirm Action</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Recommendations-specific JavaScript
+        function refreshRecommendations() {
+            showNotification('Refreshing recommendations...', 'info');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        }
+        
+        function filterRecommendations(action) {
+            const rows = document.querySelectorAll('tbody tr[data-action]');
+            const buttons = document.querySelectorAll('.btn-group .btn');
+            
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            rows.forEach(row => {
+                if (action === 'all' || row.dataset.action === action) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function executeAction(itemId, action) {
+            const modal = new bootstrap.Modal(document.getElementById('actionModal'));
+            document.getElementById('actionDetails').innerHTML = `
+                <h6>Confirm ${action}</h6>
+                <p>Are you sure you want to ${action.toLowerCase()} this item?</p>
+                <div class="alert alert-info">
+                    <strong>Impact:</strong> This action will reduce waste and potentially save money.
+                </div>
+            `;
+            modal.show();
+        }
+        
+        function confirmAction() {
+            showNotification('Action executed successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
+        }
+        
+        function markAsComplete(itemId) {
+            if (confirm('Mark this item as complete? This will remove it from inventory.')) {
+                fetch(`/mark_complete/${itemId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Item marked as complete!', 'success');
+                        // Remove the item from the UI
+                        const element = document.querySelector(`[onclick="markAsComplete(${itemId})"]`);
+                        if (element) {
+                            element.closest('.col-md-4').remove();
+                        }
+                    }
+                })
+                .catch(error => {
+                    showNotification('Error marking item as complete', 'error');
+                });
+            }
+        }
+        
+        function viewDetails(itemId) {
+            showNotification('Details view coming soon!', 'info');
+        }
+        
+        function dismissRecommendation(itemId) {
+            if (confirm('Are you sure you want to dismiss this recommendation?')) {
+                showNotification('Recommendation dismissed', 'warning');
+            }
+        }
+        
+        // Auto-refresh recommendations every 5 minutes
+        setInterval(() => {
+            // Check for new recommendations
+            console.log('Checking for new recommendations...');
+        }, 300000);
+    </script>
+    <script>
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('light-theme');
+    if (body.classList.contains('light-theme')) {
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-moon"></i>';
+    }
+}
+window.onload = function() {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+</script>
+    <style>
+    .table .rec-name, .table .rec-category, .table .rec-quantity, .table .rec-expiry, .table .rec-action {
+        color: #222 !important;
+        font-weight: 600;
+    }
+    .table .rec-expiry .badge.bg-danger {
+        background: #ff1744 !important;
+        color: #fff !important;
+    }
+    </style>
+</body>
+</html> 

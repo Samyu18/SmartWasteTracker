@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Smart Waste Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">Smart Waste Tracker</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Dashboard</a>
+                <a class="nav-link" href="/inventory">Inventory</a>
+                <a class="nav-link" href="/recommendations">Recommendations</a>
+                <a class="nav-link active" href="/analytics">Analytics</a>
+                <a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <button id="theme-toggle" class="btn btn-outline-secondary ms-2" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>Analytics & Insights</h1>
+                    <p class="lead">Deep dive into your waste management performance and trends</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary" onclick="exportData()">
+                        <i class="fas fa-download"></i> Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Summary Card -->
+        <div class="card mb-4" style="background: rgba(255,255,255,0.07); box-shadow: 0 4px 24px rgba(102,126,234,0.08);">
+            <h3 style="font-size:1.2rem; margin-bottom:1rem;">Category Summary</h3>
+            <div style="display:flex; flex-wrap:wrap; gap:1rem;">
+                {% for category, count in analytics.category_counts.items() %}
+                    <div style="display:flex; align-items:center; background:rgba(102,126,234,0.12); border-radius:20px; padding:0.5rem 1.2rem;">
+                        <span class="badge bg-primary me-2" style="font-size:1rem;">{{ category }}</span>
+                        <span style="font-weight:600; color:#fff;">{{ count }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ analytics.total_items }}</div>
+                    <div class="stats-label">Total Items</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ analytics.total_quantity }}</div>
+                    <div class="stats-label">Total Quantity</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ analytics.surplus_items }}</div>
+                    <div class="stats-label">Surplus Items</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ analytics.expiring_soon }}</div>
+                    <div class="stats-label">Expiring Soon</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actionable Report Section -->
+        <div class="card mb-4">
+            <h3>Summary Report</h3>
+            <ul style="font-size:1.1rem;">
+                <li><strong>{{ analytics.surplus_items }}</strong> items are surplus and may require action.</li>
+                <li><strong>{{ analytics.expiring_soon }}</strong> items are expiring soon and should be prioritized.</li>
+                <li><strong>{{ analytics.donate_count }}</strong> items are recommended for <span class="badge bg-success">Donation</span>.</li>
+                <li><strong>{{ analytics.repurpose_count }}</strong> items are recommended for <span class="badge bg-warning">Repurposing</span>.</li>
+                <li><strong>{{ analytics.recycle_count }}</strong> items are recommended for <span class="badge bg-info">Recycling</span>.</li>
+            </ul>
+            <div class="alert alert-info mt-3">
+                <strong>Tip:</strong> Focus on donating or repurposing surplus and soon-expiring items to maximize savings and minimize waste!
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <h3>Performance Metrics</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Waste Reduction Rate</h5>
+                            <div class="progress mb-3">
+                                <div class="progress-bar" style="width: 75%"></div>
+                            </div>
+                            <small>75% reduction achieved</small>
+                            
+                            <h5 class="mt-4">Donation Success Rate</h5>
+                            <div class="progress mb-3">
+                                <div class="progress-bar" style="width: 85%"></div>
+                            </div>
+                            <small>85% of surplus items donated</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Cost Savings</h5>
+                            <div class="alert alert-success">
+                                <h4>$2,450</h4>
+                                <p>Total savings this month</p>
+                            </div>
+                            
+                            <h5>Environmental Impact</h5>
+                            <div class="alert alert-info">
+                                <h4>1,200 lbs</h4>
+                                <p>Waste diverted from landfill</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" onclick="generateReport()">
+                            <i class="fas fa-file-alt"></i> Generate Report
+                        </button>
+                        <button class="btn btn-warning" onclick="setAlerts()">
+                            <i class="fas fa-bell"></i> Set Alerts
+                        </button>
+                        <button class="btn btn-info" onclick="optimizeInventory()">
+                            <i class="fas fa-cogs"></i> Optimize Inventory
+                        </button>
+                        <button class="btn btn-primary" onclick="scheduleAudit()">
+                            <i class="fas fa-calendar"></i> Schedule Audit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Analysis -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>Category Analysis</h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Items</th>
+                                    <th>Waste Rate</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category, count in analytics.category_counts.items() %}
+                                <tr>
+                                    <td><span class="badge bg-primary">{{ category }}</span></td>
+                                    <td>{{ count or 0 }}</td>
+                                    <td>
+                                        {% set waste_rate = (count / analytics.total_items * 100) if analytics.total_items > 0 else 0 %}
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar" style="width: {{ waste_rate | round(1) }}%"></div>
+                                        </div>
+                                        <small>{{ waste_rate | round(1) }}%</small>
+                                    </td>
+                                    <td>
+                                        {% if count > 3 %}
+                                            <span class="text-danger">↑ High</span>
+                                        {% elif count > 1 %}
+                                            <span class="text-warning">→ Medium</span>
+                                        {% else %}
+                                            <span class="text-success">↓ Low</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>Predictive Insights</h3>
+                    <div class="alert alert-info">
+                        <h6>AI Predictions</h6>
+                        <p>Based on current trends, you can expect:</p>
+                        <ul>
+                            <li>15% increase in dairy waste next week</li>
+                            <li>Optimal ordering time: Tuesday 9 AM</li>
+                            <li>Recommended donation window: 2-3 days before expiry</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-warning">
+                        <h6>⚠️ Risk Alerts</h6>
+                        <p>High-risk items requiring attention:</p>
+                        <ul>
+                            <li>Milk - 3 days until expiry</li>
+                            <li>Bread - Surplus detected</li>
+                            <li>Produce - High quantity alert</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historical Performance -->
+        <div class="card">
+            <h3>Historical Performance</h3>
+            <div class="row justify-content-center">
+                <div class="col-md-4 text-center">
+                    <canvas id="monthlyChart" height="120" width="120" style="max-width:140px;max-height:120px;"></canvas>
+                    <div style="margin-top:1rem; font-size:1.1rem; color:#222; font-weight:500;">
+                        Waste reduced by 50% over the last 6 months.
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <canvas id="categoryPerfChart" height="120" width="120" style="max-width:140px;max-height:120px;"></canvas>
+                    <div style="margin-top:1rem; font-size:1.1rem; color:#222; font-weight:500;">
+                        Category performance by item count.
+                    </div>
+                </div>
+                <div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-center">
+                    <div class="card" style="background:rgba(79,172,254,0.12); box-shadow:0 2px 8px rgba(79,172,254,0.08); width:120px;">
+                        <div class="stats-number" style="font-size:2.5rem; color:#4facfe;">85%</div>
+                        <div style="font-size:1rem; color:#222;">Efficiency Score</div>
+                        <div class="progress" style="height:8px; margin-top:0.5rem;">
+                            <div class="progress-bar" style="width:85%; background:#4facfe;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Modals -->
+    <div class="modal fade" id="alertsModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Set Alerts</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="alertsForm">
+              <div class="mb-3">
+                <label class="form-label">Surplus Threshold</label>
+                <input type="number" class="form-control" name="surplus" min="1" value="10">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Expiry Days Alert</label>
+                <input type="number" class="form-control" name="expiry" min="1" value="7">
+              </div>
+              <button type="submit" class="btn btn-primary">Save Alerts</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="optimizeModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Inventory Optimization</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ul>
+              <li>Move surplus Dairy to donation queue.</li>
+              <li>Repurpose Bakery items with 2 days to expiry.</li>
+              <li>Recycle excess Beverages.</li>
+            </ul>
+            <button class="btn btn-success" data-bs-dismiss="modal">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="auditModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Schedule Audit</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="auditForm">
+              <div class="mb-3">
+                <label class="form-label">Audit Date</label>
+                <input type="date" class="form-control" name="audit_date" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Schedule</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Analytics-specific JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Monthly Trends
+            const monthlyCtx = document.getElementById('monthlyChart');
+            if (monthlyCtx) {
+                new Chart(monthlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Waste (lbs)',
+                            data: [1200, 1100, 900, 800, 700, 600],
+                            backgroundColor: '#fa709a'
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#222', font: { size: 10 } } },
+                            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#222', font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+            // Category Performance
+            const catPerfCtx = document.getElementById('categoryPerfChart');
+            if (catPerfCtx) {
+                new Chart(catPerfCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ analytics.categories | tojson }},
+                        datasets: [{
+                            label: 'Items',
+                            data: {{ analytics.category_counts.values() | list | tojson }},
+                            backgroundColor: '#4facfe'
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#222', font: { size: 10 } } },
+                            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#222', font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+        });
+
+        // Helper to get table data for PDF
+        function getCategoryTableData() {
+            return [
+                ['Category', 'Items', 'Waste Rate', 'Trend'],
+                {% for category, count in analytics.category_counts.items() %}
+                [
+                    '{{ category }}',
+                    '{{ count or 0 }}',
+                    '{{ ((count / analytics.total_items * 100) if analytics.total_items > 0 else 0) | round(1) }}%',
+                    '{% if count > 3 %}High{% elif count > 1 %}Medium{% else %}Low{% endif %}'
+                ],
+                {% endfor %}
+            ];
+        }
+
+        function exportData() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('Smart Waste Tracker - Analytics Report', 40, 40);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            let y = 70;
+            doc.text('Summary:', 40, y);
+            y += 20;
+            doc.text(`Total Items: {{ analytics.total_items }}`, 40, y); y += 16;
+            doc.text(`Total Quantity: {{ analytics.total_quantity }}`, 40, y); y += 16;
+            doc.text(`Surplus Items: {{ analytics.surplus_items }}`, 40, y); y += 16;
+            doc.text(`Expiring Soon: {{ analytics.expiring_soon }}`, 40, y); y += 16;
+            doc.text(`Recommended for Donation: {{ analytics.donate_count }}`, 40, y); y += 16;
+            doc.text(`Recommended for Repurposing: {{ analytics.repurpose_count }}`, 40, y); y += 16;
+            doc.text(`Recommended for Recycling: {{ analytics.recycle_count }}`, 40, y); y += 24;
+            // Category Summary
+            doc.setFont('helvetica', 'bold');
+            doc.text('Category Summary:', 40, y); y += 16;
+            doc.setFont('helvetica', 'normal');
+            {% for category, count in analytics.category_counts.items() %}
+            doc.text('{{ category }}: {{ count }}', 60, y); y += 14;
+            {% endfor %}
+            y += 10;
+            // Category Analysis Table
+            doc.setFont('helvetica', 'bold');
+            doc.text('Category Analysis:', 40, y); y += 16;
+            doc.setFont('helvetica', 'normal');
+            const tableData = getCategoryTableData();
+            let colX = [40, 160, 220, 320];
+            // Table header
+            doc.setFont('helvetica', 'bold');
+            for (let i = 0; i < tableData[0].length; i++) {
+                doc.text(tableData[0][i], colX[i], y);
+            }
+            y += 14;
+            doc.setFont('helvetica', 'normal');
+            // Table rows
+            for (let r = 1; r < tableData.length; r++) {
+                for (let i = 0; i < tableData[r].length; i++) {
+                    doc.text(tableData[r][i], colX[i], y);
+                }
+                y += 14;
+            }
+            doc.save('analytics_report.pdf');
+            showNotification('PDF report downloaded!', 'success');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type}`;
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px; opacity: 0; transition: all 0.3s;`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">×</button>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => { notification.style.opacity = '1'; }, 10);
+            setTimeout(() => {
+                if (notification.parentNode) notification.remove();
+            }, 4000);
+        }
+
+        function generateReport() {
+            exportData();
+        }
+
+        function setAlerts() {
+            const modal = new bootstrap.Modal(document.getElementById('alertsModal'));
+            modal.show();
+        }
+
+        function optimizeInventory() {
+            const modal = new bootstrap.Modal(document.getElementById('optimizeModal'));
+            modal.show();
+        }
+
+        function scheduleAudit() {
+            const modal = new bootstrap.Modal(document.getElementById('auditModal'));
+            modal.show();
+        }
+
+        document.getElementById('alertsForm').onsubmit = function(e) {
+            e.preventDefault();
+            showNotification('Alerts saved!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('alertsModal')).hide();
+        };
+
+        document.getElementById('auditForm').onsubmit = function(e) {
+            e.preventDefault();
+            showNotification('Audit scheduled!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('auditModal')).hide();
+        };
+    </script>
+
+    <style>
+    .table td, .table th { color: #222 !important; }
+    .modal-content, .modal-body {
+      background: #fff !important;
+      color: #222 !important;
+    }
+    .modal label, .modal-title, .modal .form-label {
+      color: #222 !important;
+    }
+    .modal .form-control {
+      color: #222 !important;
+      background: #f5f5f5 !important;
+      border: 1px solid #ccc;
+    }
+    .modal .btn {
+      color: #fff !important;
+    }
+    </style>
+    <script>
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('light-theme');
+    if (body.classList.contains('light-theme')) {
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-moon"></i>';
+    }
+}
+window.onload = function() {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+    </script>
+</body>
+</html> 

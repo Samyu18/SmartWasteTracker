@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Waste Tracker - Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        .dashboard-emoji { font-size: 2.2rem; margin-right: 0.5rem; }
+        .dashboard-card { box-shadow: none !important; background: rgba(255,255,255,0.07) !important; }
+        .dashboard-card .stats-number { font-size: 2rem; }
+        .dashboard-card .stats-label { font-size: 1rem; }
+        .dashboard-card .emoji { font-size: 2rem; }
+        .dashboard-section { margin-bottom: 2rem; }
+        .dashboard-chart { height: 180px !important; max-height: 180px !important; }
+        @media (max-width: 768px) {
+            .dashboard-chart { height: 120px !important; max-height: 120px !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">Smart Waste Tracker</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="/">Dashboard</a>
+                <a class="nav-link" href="/inventory">Inventory</a>
+                <a class="nav-link" href="/recommendations">Recommendations</a>
+                <a class="nav-link" href="/analytics">Analytics</a>
+                <a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <button id="theme-toggle" class="btn btn-outline-secondary ms-2" onclick="toggleTheme()" title="Toggle theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mt-4 mb-4" style="color: #ff6b3d; font-weight: 700;"><span class="dashboard-emoji">📊</span>Your Waste Management Overview</h2>
+
+        <!-- Stat Cards with Icons, Emojis, and Change Indicators -->
+        <div class="row mb-4 g-4">
+            <div class="col-md-3">
+                <div class="card text-center p-4 dashboard-card">
+                    <div class="emoji">📦</div>
+                    <div class="stats-number" style="color:#ff6b3d; font-weight:700;">8</div>
+                    <div class="stats-label">Total Items</div>
+                    <div style="color:#1de982; font-size:0.95rem;">⬆️ +12% this week</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center p-4 dashboard-card">
+                    <div class="emoji">⚠️</div>
+                    <div class="stats-number" style="color:#ff6b3d; font-weight:700;">4</div>
+                    <div class="stats-label">Expiring Soon</div>
+                    <div style="color:#ff4d4f; font-size:0.95rem;">⬇️ -5% this week</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center p-4 dashboard-card">
+                    <div class="emoji">💰</div>
+                    <div class="stats-number" style="color:#ff6b3d; font-weight:700;">$604</div>
+                    <div class="stats-label">Cost Savings</div>
+                    <div style="color:#1de982; font-size:0.95rem;">⬆️ +23% this month</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center p-4 dashboard-card">
+                    <div class="emoji">♻️</div>
+                    <div class="stats-number" style="color:#ff6b3d; font-weight:700;">86%</div>
+                    <div class="stats-label">Waste Reduction</div>
+                    <div style="color:#1de982; font-size:0.95rem;">⬆️ +18% this month</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI-Powered Insights Section -->
+        <div class="card mb-4 p-4 dashboard-section dashboard-card">
+            <h3 style="color:#1de9b6; font-weight:700;"><span class="dashboard-emoji">🤖</span>AI-Powered Insights</h3>
+            <p class="mb-4" style="color:#b8b8b8;">Smart recommendations based on your data</p>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card text-center p-3 h-100 dashboard-card">
+                        <div class="emoji">📈</div>
+                        <div style="font-weight:600;">Demand Prediction</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">AI predicts you'll need 15% more dairy products next week</div>
+                        <span class="badge bg-success mt-2">High Confidence</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center p-3 h-100 dashboard-card">
+                        <div class="emoji">⏰</div>
+                        <div style="font-weight:600;">Optimal Timing</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">Best time to order produce: Tuesday 9 AM</div>
+                        <span class="badge bg-info mt-2">Based on 6 months data</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center p-3 h-100 dashboard-card">
+                        <div class="emoji">🍞</div>
+                        <div style="font-weight:600;">Waste Alert</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">Bread inventory 20% higher than usual – consider donations</div>
+                        <span class="badge bg-danger mt-2">Action Required</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Section -->
+        <div class="mb-4 dashboard-section">
+            <h3 style="color:#ff6b3d; font-weight:700;"><span class="dashboard-emoji">⚡</span>Quick Actions</h3>
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card text-center p-4 h-100 dashboard-card">
+                        <div class="emoji">➕</div>
+                        <div style="font-weight:600;">Add Item</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">Add new inventory items to track</div>
+                        <a href="/inventory" class="btn btn-warning mt-2">ADD ITEM</a>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center p-4 h-100 dashboard-card">
+                        <div class="emoji">📊</div>
+                        <div style="font-weight:600;">View Analytics</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">Detailed performance metrics</div>
+                        <a href="/analytics" class="btn btn-primary mt-2">VIEW ANALYTICS</a>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center p-4 h-100 dashboard-card">
+                        <div class="emoji">💡</div>
+                        <div style="font-weight:600;">Get Recommendations</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">AI-powered suggestions</div>
+                        <a href="/recommendations" class="btn btn-success mt-2">GET TIPS</a>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center p-4 h-100 dashboard-card">
+                        <div class="emoji">📄</div>
+                        <div style="font-weight:600;">Performance Report</div>
+                        <div style="font-size:0.98rem; color:#b8b8b8;">Monthly waste reduction report</div>
+                        <a href="/analytics" class="btn btn-danger mt-2">GENERATE REPORT</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing Dashboard Content (Charts, Inventory, Alerts, Progress) -->
+        <div class="row mb-4 g-4">
+            <div class="col-md-6">
+                <div class="card dashboard-card">
+                    <h4 class="mb-2">📊 Waste Distribution</h4>
+                    <canvas id="wasteChart" class="dashboard-chart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card dashboard-card">
+                    <h4 class="mb-2">📈 Waste Reduction Trend</h4>
+                    <canvas id="trendChart" class="dashboard-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Alerts Section -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>⚠️ Surplus Items</h3>
+                    {% if surplus %}
+                        {% for name in surplus %}
+                        <div class="alert alert-warning">
+                            <strong>{{ name }}</strong> - Consider repurposing or donating
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-success">
+                            No surplus items detected! Great job managing inventory.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <h3>⏰ Soon Expiring</h3>
+                    {% if soon_expiring %}
+                        {% for item in soon_expiring %}
+                        <div class="alert alert-danger">
+                            <strong>{{ item.name }}</strong> expires on {{ item.expiry_date.strftime('%Y-%m-%d') }}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-success">
+                            No items expiring soon! Excellent shelf life management.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="card">
+            <h3>Waste Reduction Progress</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>Donation Rate</h5>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 75%"></div>
+                    </div>
+                    <small>75% of surplus items donated</small>
+                </div>
+                <div class="col-md-4">
+                    <h5>Recycling Rate</h5>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 60%"></div>
+                    </div>
+                    <small>60% of waste recycled</small>
+                </div>
+                <div class="col-md-4">
+                    <h5>Repurposing Rate</h5>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 45%"></div>
+                    </div>
+                    <small>45% of items repurposed</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+function toggleTheme() {
+    const body = document.body;
+    body.classList.toggle('light-theme');
+    // Optionally, store preference in localStorage
+    if (body.classList.contains('light-theme')) {
+        localStorage.setItem('theme', 'light');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-moon"></i>';
+    }
+}
+// On page load, set theme from localStorage
+window.onload = function() {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+    }
+}
+</script>
+</body>
+</html> 
